@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "description": "The user's profile photo URL." },
+        "role": { "type": "string", "enum": ["client", "admin"], "description": "The user's role." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Booking": {
+      "title": "Service Booking",
+      "description": "Represents a plumbing service request.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who booked." },
+        "serviceType": { "type": "string", "description": "The type of service requested." },
+        "address": { "type": "string", "description": "The service location address." },
+        "phone": { "type": "string", "description": "Contact phone number." },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"], "description": "Current status of the booking." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the booking was created." },
+        "notes": { "type": "string", "description": "Additional notes from the customer." }
+      },
+      "required": ["uid", "serviceType", "address", "phone", "status", "createdAt"]
+    },
+    "Review": {
+      "title": "Customer Review",
+      "description": "A review submitted by a customer.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the reviewer." },
+        "displayName": { "type": "string", "description": "The name to display for the review." },
+        "rating": { "type": "number", "description": "Rating out of 5." },
+        "comment": { "type": "string", "description": "The review text." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the review was posted." }
+      },
+      "required": ["uid", "displayName", "rating", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles collection."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Service bookings collection."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer reviews collection."
+    }
+  }
+}

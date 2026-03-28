@@ -1,0 +1,7 @@
+{
+  "name": "Phoenix Plumbers & Drain Clean Services",
+  "description": "Premium plumbing and drain cleaning services in Thoothukudi. 24/7 emergency support, experienced technicians, and affordable pricing.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

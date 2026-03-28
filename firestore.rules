@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, displayName, photoURL, role
+    //
+    // Collection: bookings
+    // Fields: uid, serviceType, address, phone, status, createdAt, notes
+    //
+    // Collection: reviews
+    // Fields: uid, displayName, rating, comment, createdAt
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "ponsaravanan183@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string && data.uid.size() == 28 &&
+             data.email is string && data.email.size() < 255 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('role' in data) || data.role in ['client', 'admin']);
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['uid', 'serviceType', 'address', 'phone', 'status', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.status in ['pending', 'confirmed', 'completed', 'cancelled'] &&
+             data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&
+             data.address is string && data.address.size() > 0 && data.address.size() < 500 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 1000));
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'rating', 'comment', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() > 0 && data.comment.size() < 1000 &&
+             data.displayName is string && data.displayName.size() < 100;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'client' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == resource.data.role || isAdmin()) &&
+                    request.resource.data.uid == resource.data.uid;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidBooking(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin()) && isValidBooking(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidReview(request.resource.data);
+      allow update: if isOwner(resource.data.uid) && isValidReview(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
